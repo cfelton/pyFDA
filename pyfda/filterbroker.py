@@ -50,6 +50,7 @@ gD['imports'] = {} # dict with filter files / classes
 # filter types (ft), design methods (dm) and filter order (fo).
 # This dict is built + overwritten by FilterFileReader.buildFilterTree() !
 filTree = {
+    'None': {'FIR': None, 'IIR': None},
     'HP':
         {'FIR':
             {'equiripple':
@@ -118,6 +119,7 @@ fil[0] = {'rt':'LP', 'ft':'FIR', 'dm':'equiripple', 'fo':'man',
             'plt_tUnit':'s',
             'plt_phiUnit': 'rad',
             'plt_phiLabel': r'$\angle H(\mathrm{e}^{\mathrm{j} \Omega})$  in rad ' + r'$\rightarrow $',
-            'wdg_dyn':{'win':'hann'}
+            'wdg_dyn':{'win':'hann'},
+            'None':None
             }
 

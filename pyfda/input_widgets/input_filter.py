@@ -158,7 +158,6 @@ class InputFilter(QtGui.QWidget):
         self.cmbDesignMethod.activated.connect(self.sigSpecsChanged.emit)
         #------------------------------------------------------------
 
-
     def loadEntries(self):
         """
         Reload comboboxes from filter dictionary to update changed settings
@@ -167,7 +166,6 @@ class InputFilter(QtGui.QWidget):
         idx_rt = self.cmbResponseType.findData(fb.fil[0]['rt']) # find index for 'LP'
         self.cmbResponseType.setCurrentIndex(idx_rt)
         self.setResponseType()
-
 
     def setResponseType(self):
         """
@@ -181,27 +179,33 @@ class InputFilter(QtGui.QWidget):
         # itemData only abbreviation ('LP')
         self.rtIdx = self.cmbResponseType.currentIndex()
         self.rt = str(self.cmbResponseType.itemData(self.rtIdx))
-
+        self.rt = 0 if self.rt is None else self.rt
         fb.fil[0]['rt'] = self.rt # copy selected rt setting to filter dict
      
         # Get list of available filter types for new rt
-        ftList = list(fb.filTree[self.rt].keys()) # explicit list() needed for Py3
-        
-        # Rebuild filter type combobox entries for new rt setting 
-        # The combobox is populated with the "long name", the internal name
-        # is stored in comboBox.itemData   
-        self.cmbFilterType.clear()
-        self.cmbFilterType.addItems(ftList)
+        print('DEBUG: self.rt {} {}'.format(type(self.rt), self.rt))
 
-        # Is last filter type (e.g. IIR) in list for new rt? 
-        # And has the widget been initialized?
-        if fb.fil[0]['ft'] in ftList and self.filter_initialized:
-            ft_idx = self.cmbFilterType.findText(fb.fil[0]['ft'])
-            self.cmbFilterType.setCurrentIndex(ft_idx) # yes, set same ft as before
+        if str(self.rt) == 'None':
+            pass
         else:
-            self.cmbFilterType.setCurrentIndex(0)     # no, set index 0        
+            print('DEBUG: {}'.format(fb.filTree[self.rt].keys()))
+            ftList = list(fb.filTree[self.rt].keys()) # explicit list() needed for Py3
         
-        self.setFilterType()
+            # Rebuild filter type combobox entries for new rt setting
+            # The combobox is populated with the "long name", the internal name
+            # is stored in comboBox.itemData
+            self.cmbFilterType.clear()
+            self.cmbFilterType.addItems(ftList)
+
+            # Is last filter type (e.g. IIR) in list for new rt?
+            # And has the widget been initialized?
+            if fb.fil[0]['ft'] in ftList and self.filter_initialized:
+                ft_idx = self.cmbFilterType.findText(fb.fil[0]['ft'])
+                self.cmbFilterType.setCurrentIndex(ft_idx) # yes, set same ft as before
+            else:
+                self.cmbFilterType.setCurrentIndex(0)     # no, set index 0
+        
+            self.setFilterType()
 
     def setFilterType(self):
         """"

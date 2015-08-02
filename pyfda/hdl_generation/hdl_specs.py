@@ -30,7 +30,7 @@ if __name__ == "__main__":
 import pyfda.filterbroker as fb # importing filterbroker initializes all its globals
 import pyfda.pyfda_lib_fix_v3 as fix
 
-from pyfda.hdl_generation.filter_iir import SIIR #  second order IIR filter object
+from pyfda.hdl_generation.filter_iir import FilterIIR #  second order IIR filter object
 
 
 
@@ -79,7 +79,6 @@ class HDLSpecs(QtGui.QWidget):
 #        self.lblMyhdl1.setFont(bfont)
         self.lblMyhdl2 = QtGui.QLabel("Enter fixpoint signal formats as QI.QF:")
 
-        
         ledMaxWid = 30 # Max. Width of QLineEdit fields
         qQuant = ['none', 'round', 'fix', 'floor']
         qOvfl = ['none', 'wrap', 'sat']
@@ -89,10 +88,8 @@ class HDLSpecs(QtGui.QWidget):
         tipQF = "Specify number of fractional bits."
         lblQ = "Quant.:"
         lblOv = "Ovfl.:"
-        
 
         layVMain = QtGui.QVBoxLayout()
-
 
         self.lblQIQF  = QtGui.QLabel("QI.QF = ")
         self.lblDot_c = QtGui.QLabel(".")
@@ -366,15 +363,18 @@ class HDLSpecs(QtGui.QWidget):
 
         self.W = (qI_i + qF_i + 1, 0) # Matlab format: (W,WF)
         print("W = ", self.W)
-        
-        #       get filter coefficients etc. from filter dict    
+
+        # @todo: always use sos?  The filter object is setup to always
+        # @todo: generate a second order filter
+        # get filter coefficients etc. from filter dict
         coeffs = fb.fil[0]['ba']
         zpk =  fb.fil[0]['zpk']
         sos = fb.fil[0]['sos']
 
-        # =============== adapted from C. Feltons SIIR example =============
-        self.flt = SIIR(W = self.W, b = np.array(coeffs[0][0:3]), 
-                          a = np.array(coeffs[1][0:3]))
+        # =============== adapted from C. Felton's SIIR example =============
+        self.flt = FilterIIR(b=np.array(coeffs[0][0:3]),
+                             a=np.array(coeffs[1][0:3]),
+                             word_format=(self.W, 0, self.W-1))
 
         
 #------------------------------------------------------------------------------
@@ -402,7 +402,7 @@ class HDLSpecs(QtGui.QWidget):
         
         self.setupHDL()
         self.flt.hdl_name = "IIR_example"  
-        self.flt.Convert()
+        self.flt.convert()
         print("HDL ConversionFinished!")
 
 #------------------------------------------------------------------------------

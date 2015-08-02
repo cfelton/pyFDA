@@ -17,7 +17,7 @@ if __name__ == "__main__":
     sys.path.append(os.path.dirname(__cwd__))
 
 import pyfda.filterbroker as fb
-import pyfda.pyfda_lib
+from pyfda import pyfda_lib
 from pyfda.plot_widgets.plot_utils import MplWidget
 
 from mpl_toolkits.mplot3d.axes3d import Axes3D

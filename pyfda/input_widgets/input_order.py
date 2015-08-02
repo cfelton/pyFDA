@@ -105,29 +105,32 @@ class InputOrder(QtGui.QFrame):
         options ('min', 'man') of the selected design method 
         """
 
-        # read list of available filter order [fo] methods for current 
-        # design method [dm] from filTree:
-        foList = fb.filTree[fb.fil[0]['rt']]\
-            [fb.fil[0]['ft']][fb.fil[0]['dm']].keys()
-        if self.DEBUG:
-            print("=== InputOrder.update() ===")
-            print("foList", foList)
+        try:
+            # read list of available filter order [fo] methods for current
+            # design method [dm] from filTree:
+            foList = fb.filTree[fb.fil[0]['rt']]\
+                     [fb.fil[0]['ft']][fb.fil[0]['dm']].keys()
+            if self.DEBUG:
+                print("=== InputOrder.update() ===")
+                print("foList", foList)
 
-        # is currently selected fo setting available for (new) dm ?
-        if fb.fil[0]['fo'] in foList:
-            self.fo = fb.fil[0]['fo'] # keep current setting
-        else:
-            self.fo = foList[0] # use first list entry from filterTree
-            fb.fil[0]['fo'] = self.fo # and update fo method
+            # is currently selected fo setting available for (new) dm ?
+            if fb.fil[0]['fo'] in foList:
+                self.fo = fb.fil[0]['fo'] # keep current setting
+            else:
+                self.fo = foList[0] # use first list entry from filterTree
+                fb.fil[0]['fo'] = self.fo # and update fo method
 
-        # update dynamic (i.e. defined in filter design routine) subwidgets
-        self._updateDynWidgets()
+            # update dynamic (i.e. defined in filter design routine) subwidgets
+            self._updateDynWidgets()
 
-        # Determine which subwidgets are __visible__
-        self.lblOrder.setVisible('man' in foList)
-        self.ledOrder.setVisible('man' in foList)
-        self.chkMin.setVisible('min' in foList)
-
+            # Determine which subwidgets are __visible__
+            self.lblOrder.setVisible('man' in foList)
+            self.ledOrder.setVisible('man' in foList)
+            self.chkMin.setVisible('min' in foList)
+        except:
+            # @todo: temprory because the "None" key error cause fault
+            pass
 
     def loadEntries(self):
         """

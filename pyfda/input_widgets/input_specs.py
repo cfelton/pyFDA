@@ -163,58 +163,62 @@ class InputSpecs(QtGui.QWidget):
         ft = fb.fil[0]['ft']
         dm = fb.fil[0]['dm']
         fo = fb.fil[0]['fo']
-        all_params = fb.filTree[rt][ft][dm][fo]['par'] # all parameters e.g. 'F_SB'
-        min_params = man_params = []
-        if "min" in fb.filTree[rt][ft][dm]:
-            min_params = fb.filTree[rt][ft][dm]['min']['par']
-        if "man" in fb.filTree[rt][ft][dm]:
-            man_params = fb.filTree[rt][ft][dm]['man']['par']
-            
-        vis_wdgs = fb.filTree[rt][ft][dm][fo]['vis'] # visible widgets
-        dis_wdgs = fb.filTree[rt][ft][dm][fo]['dis'] # disabled widgets
-        msg    = fb.filTree[rt][ft][dm][fo]['msg'] # message
+        try:
+            all_params = fb.filTree[rt][ft][dm][fo]['par'] # all parameters e.g. 'F_SB'
+            min_params = man_params = []
+            if "min" in fb.filTree[rt][ft][dm]:
+                min_params = fb.filTree[rt][ft][dm]['min']['par']
+            if "man" in fb.filTree[rt][ft][dm]:
+                man_params = fb.filTree[rt][ft][dm]['man']['par']
 
-        # build separate parameter lists according to the first letter
-        self.f_params = [l for l in all_params if l[0] == 'F']
-        self.f_min_params = [l for l in min_params if l[0] == 'F']
-        self.f_man_params = [l for l in man_params if l[0] == 'F']
-        
-        self.a_params = [l for l in all_params if l[0] == 'A']
-        self.weightParams = [l for l in all_params if l[0] == 'W']
-        if self.DEBUG:
-            print("=== InputParams.chooseDesignMethod ===")
-            print("selFilter:", fb.fil[0])
-            print('myLabels:', all_params)
-            print('ampLabels:', self.a_params)
-            print('freqLabels:', self.f_params)
-            print('weightLabels:', self.weightParams)
+            vis_wdgs = fb.filTree[rt][ft][dm][fo]['vis'] # visible widgets
+            dis_wdgs = fb.filTree[rt][ft][dm][fo]['dis'] # disabled widgets
+            msg    = fb.filTree[rt][ft][dm][fo]['msg'] # message
 
-        # pass new labels to widgets and recreate UI
-        # set widgets invisible if param list is empty
-        self.fil_ord.loadEntries()
-        
-        # always use parameters for manual filter order here,
-        # frequency specs for minimum order are displayed in target specs
-        self.f_specs.setVisible("fspecs" in vis_wdgs) 
-        self.f_specs.setEnabled("fspecs" not in dis_wdgs)
-        self.f_specs.updateUI(newLabels = self.f_man_params)
-        
-#        self.a_specs.setVisible(self.a_params != [])
-        self.a_specs.setVisible("aspecs" in vis_wdgs)        
-        self.a_specs.setEnabled("aspecs" not in dis_wdgs)
-        self.a_specs.updateUI(newLabels = self.a_params)
-        
-        self.w_specs.setVisible("wspecs" in vis_wdgs)
-        self.w_specs.setEnabled("wspecs" not in dis_wdgs)
-        self.w_specs.updateUI(newLabels = self.weightParams)
+            # build separate parameter lists according to the first letter
+            self.f_params = [l for l in all_params if l[0] == 'F']
+            self.f_min_params = [l for l in min_params if l[0] == 'F']
+            self.f_man_params = [l for l in man_params if l[0] == 'F']
 
-        self.t_specs.setVisible("tspecs" in vis_wdgs) 
-        self.t_specs.setEnabled("tspecs" not in dis_wdgs)
-        self.t_specs.updateUI(self.f_min_params, self.a_params)
-        
-        self.lblMsg.setText(msg)
+            self.a_params = [l for l in all_params if l[0] == 'A']
+            self.weightParams = [l for l in all_params if l[0] == 'W']
+            if self.DEBUG:
+                print("=== InputParams.chooseDesignMethod ===")
+                print("selFilter:", fb.fil[0])
+                print('myLabels:', all_params)
+                print('ampLabels:', self.a_params)
+                print('freqLabels:', self.f_params)
+                print('weightLabels:', self.weightParams)
 
-        self.sigSpecsChanged.emit()
+            # pass new labels to widgets and recreate UI
+            # set widgets invisible if param list is empty
+            self.fil_ord.loadEntries()
+
+            # always use parameters for manual filter order here,
+            # frequency specs for minimum order are displayed in target specs
+            self.f_specs.setVisible("fspecs" in vis_wdgs)
+            self.f_specs.setEnabled("fspecs" not in dis_wdgs)
+            self.f_specs.updateUI(newLabels = self.f_man_params)
+
+    #        self.a_specs.setVisible(self.a_params != [])
+            self.a_specs.setVisible("aspecs" in vis_wdgs)
+            self.a_specs.setEnabled("aspecs" not in dis_wdgs)
+            self.a_specs.updateUI(newLabels = self.a_params)
+
+            self.w_specs.setVisible("wspecs" in vis_wdgs)
+            self.w_specs.setEnabled("wspecs" not in dis_wdgs)
+            self.w_specs.updateUI(newLabels = self.weightParams)
+
+            self.t_specs.setVisible("tspecs" in vis_wdgs)
+            self.t_specs.setEnabled("tspecs" not in dis_wdgs)
+            self.t_specs.updateUI(self.f_min_params, self.a_params)
+
+            self.lblMsg.setText(msg)
+
+            self.sigSpecsChanged.emit()
+        except:
+            # @todo: temporary because of the 'None' key error
+            pass
         
 
 #------------------------------------------------------------------------------        

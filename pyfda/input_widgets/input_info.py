@@ -127,118 +127,122 @@ class InputInfo(QtGui.QWidget):
         """
         Print filter properties at frequencies of interest.
         """
-        self.tblFiltPerf.setVisible(self.chkFiltPerf.isChecked())
+        try:
+            self.tblFiltPerf.setVisible(self.chkFiltPerf.isChecked())
 
-        bb = fb.fil[0]['ba'][0]
-        aa = fb.fil[0]['ba'][1]
+            bb = fb.fil[0]['ba'][0]
+            aa = fb.fil[0]['ba'][1]
 
-        f_S  = fb.fil[0]['f_S']
+            f_S  = fb.fil[0]['f_S']
 
-        # Build a list with all frequency related labels:
-        #--------------------------------------------------------------------
-        # First, extract the dicts for min / man filter order of the selected
-        # design method from filter tree:
-        fil_dict = fb.filTree[fb.fil[0]['rt']][fb.fil[0]['ft']][fb.fil[0]['dm']]
-        # Now, extract the parameter lists (key 'par'), yielding a nested list:
-        fil_list = [fil_dict[k]['par'] for k in fil_dict.keys()]
-        # Finally, flatten the list of lists and convert it into a set to 
-        # eliminate double entries:
-        fil_set = set([item for sublist in fil_list for item in sublist])
-        # extract all labels starting with 'F':
-        F_test_lbls = [lbl for lbl in fil_set if lbl[0] == 'F']
-        # construct a list of lists [frequency, label], sorted by frequency:
-        F_test = sorted([[fb.fil[0][lbl]*f_S, lbl] for lbl in F_test_lbls])
+            # Build a list with all frequency related labels:
+            #--------------------------------------------------------------------
+            # First, extract the dicts for min / man filter order of the selected
+            # design method from filter tree:
+            fil_dict = fb.filTree[fb.fil[0]['rt']][fb.fil[0]['ft']][fb.fil[0]['dm']]
+            # Now, extract the parameter lists (key 'par'), yielding a nested list:
+            fil_list = [fil_dict[k]['par'] for k in fil_dict.keys()]
+            # Finally, flatten the list of lists and convert it into a set to
+            # eliminate double entries:
+            fil_set = set([item for sublist in fil_list for item in sublist])
+            # extract all labels starting with 'F':
+            F_test_lbls = [lbl for lbl in fil_set if lbl[0] == 'F']
+            # construct a list of lists [frequency, label], sorted by frequency:
+            F_test = sorted([[fb.fil[0][lbl]*f_S, lbl] for lbl in F_test_lbls])
 
-        # construct a list of lists consisting of [label, frequency]:
-        # F_test = [[lbl, fb.fil[0][lbl]*f_S] for lbl in F_test_lbls]
-        ## sort list of tuples using the LAST element of the tuple (= frequency)
-        # F_test = sorted(F_test, key=lambda t: t[::-1])
+            # construct a list of lists consisting of [label, frequency]:
+            # F_test = [[lbl, fb.fil[0][lbl]*f_S] for lbl in F_test_lbls]
+            ## sort list of tuples using the LAST element of the tuple (= frequency)
+            # F_test = sorted(F_test, key=lambda t: t[::-1])
 
-        if self.DEBUG: print("input_info.showFiltPerf\nF_test = ", F_test)
-
-
-        # Vector with test frequencies of the labels above    
-        F_test_vals = np.array([item[0] for item in F_test]) / f_S
-        F_test_lbls = [item[1] for item in F_test]
-        
-        # Calculate frequency response at test frequencies and over the whole range:
-        [w_test, H_test] = sig.freqz(bb, aa, F_test_vals * 2.0 * pi)
-        [w, H] = sig.freqz(bb, aa)
-
-        f = w / (2.0 * pi) # frequency normalized to f_S
-        H_abs = abs(H)
-        H_max = max(H_abs);
-        H_max_dB = 20*log10(H_max);
-        F_max = f[np.argmax(H_abs)]
-        #
-        H_min = min(H_abs)
-        H_min_dB = 20*log10(H_min)
-        F_min = f[np.argmin(H_abs)]
-        
-#        f = f * f_S 
-
-        F_test_lbls += ['Min.','Max.']
-        F_test_vals = np.append(F_test_vals, [F_min, F_max])
-        H_test = np.append(H_test, [H_min, H_max])
-        # calculate response of test frequencies and round to 5 digits to 
-        # suppress fails due to numerical inaccuracies:
-        H_test_dB = np.round(-20*log10(abs(H_test)),5)
-        
-        # build a list with the corresponding target specs:
-        H_targ = []
-        H_targ_pass = []
-        
-        for i in range(len(F_test_lbls)):
-            lbl = F_test_lbls[i]
-            if lbl   == 'F_PB': 
-                H_targ.append(fb.fil[0]['A_PB'])
-                H_targ_pass.append(H_test_dB[i] <= H_targ[i])
-            elif lbl == 'F_SB': 
-                H_targ.append(fb.fil[0]['A_SB'])
-                H_targ_pass.append(H_test_dB[i] >= H_targ[i])
-            elif lbl == 'F_PB2':
-                H_targ.append(fb.fil[0]['A_PB2'])
-                H_targ_pass.append( H_test_dB[i] <= H_targ[i])
-            elif lbl == 'F_SB2':
-                H_targ.append(fb.fil[0]['A_SB2'])
-                H_targ_pass.append( H_test_dB[i] >= H_targ[i])
-            else: 
-                H_targ.append(np.nan)
-                H_targ_pass.append(True)
-
-        self.targ_spec_passed = np.all(H_targ_pass)
-#            
-        if self.DEBUG:
-            print("input_info.showFiltPerf\n===================")
-            print("H_targ", H_targ)
-            print("H_test", H_test)
-            print("H_test_dB", H_test_dB)
-            print("F_test", F_test_vals)
-            print("H_targ_pass",H_targ_pass)
-            print("passed:", self.targ_spec_passed)
-
-#        min_dB = np.floor(max(PLT_min_dB, H_min_dB) / 10) * 10
-
-        self.tblFiltPerf.setRowCount(len(H_test))
-        self.target_spec_passed = False
-
-        self.tblFiltPerf.setHorizontalHeaderLabels([
-        'f/{0:s}'.format(fb.fil[0]['freq_specs_unit']),'|H(f)|','|H(f)| (dB)', 'Spec'] )
-        self.tblFiltPerf.setVerticalHeaderLabels(F_test_lbls)
-        for row in range(len(H_test)):
-#            self.tblFiltPerf.setItem(row,0,QtGui.QTableWidgetItem(F_test_lbls[row]))
-            self.tblFiltPerf.setItem(row,0,QtGui.QTableWidgetItem(str('{0:.4g}'.format(F_test_vals[row]*f_S))))
-            self.tblFiltPerf.setItem(row,1,QtGui.QTableWidgetItem(str('%.4g'%(abs(H_test[row])))))
-            self.tblFiltPerf.setItem(row,2,QtGui.QTableWidgetItem(str('%2.3f'%(H_test_dB[row]))))
-            if not H_targ_pass[row]:
-                self.tblFiltPerf.item(row,1).setBackgroundColor(Qt.QColor('red'))
-                self.tblFiltPerf.item(row,2).setBackgroundColor(Qt.QColor('red'))
-            self.tblFiltPerf.setItem(row,3,QtGui.QTableWidgetItem(str('%2.3f'%(H_targ[row]))))
+            if self.DEBUG: print("input_info.showFiltPerf\nF_test = ", F_test)
 
 
-    #    self.tblFiltPerf.item(1,1).setBackgroundColor(Qt.QColor('red'))
-        self.tblFiltPerf.resizeColumnsToContents()
-        self.tblFiltPerf.resizeRowsToContents()
+            # Vector with test frequencies of the labels above
+            F_test_vals = np.array([item[0] for item in F_test]) / f_S
+            F_test_lbls = [item[1] for item in F_test]
+
+            # Calculate frequency response at test frequencies and over the whole range:
+            [w_test, H_test] = sig.freqz(bb, aa, F_test_vals * 2.0 * pi)
+            [w, H] = sig.freqz(bb, aa)
+
+            f = w / (2.0 * pi) # frequency normalized to f_S
+            H_abs = abs(H)
+            H_max = max(H_abs);
+            H_max_dB = 20*log10(H_max);
+            F_max = f[np.argmax(H_abs)]
+            #
+            H_min = min(H_abs)
+            H_min_dB = 20*log10(H_min)
+            F_min = f[np.argmin(H_abs)]
+
+    #        f = f * f_S
+
+            F_test_lbls += ['Min.','Max.']
+            F_test_vals = np.append(F_test_vals, [F_min, F_max])
+            H_test = np.append(H_test, [H_min, H_max])
+            # calculate response of test frequencies and round to 5 digits to
+            # suppress fails due to numerical inaccuracies:
+            H_test_dB = np.round(-20*log10(abs(H_test)),5)
+
+            # build a list with the corresponding target specs:
+            H_targ = []
+            H_targ_pass = []
+
+            for i in range(len(F_test_lbls)):
+                lbl = F_test_lbls[i]
+                if lbl   == 'F_PB':
+                    H_targ.append(fb.fil[0]['A_PB'])
+                    H_targ_pass.append(H_test_dB[i] <= H_targ[i])
+                elif lbl == 'F_SB':
+                    H_targ.append(fb.fil[0]['A_SB'])
+                    H_targ_pass.append(H_test_dB[i] >= H_targ[i])
+                elif lbl == 'F_PB2':
+                    H_targ.append(fb.fil[0]['A_PB2'])
+                    H_targ_pass.append( H_test_dB[i] <= H_targ[i])
+                elif lbl == 'F_SB2':
+                    H_targ.append(fb.fil[0]['A_SB2'])
+                    H_targ_pass.append( H_test_dB[i] >= H_targ[i])
+                else:
+                    H_targ.append(np.nan)
+                    H_targ_pass.append(True)
+
+            self.targ_spec_passed = np.all(H_targ_pass)
+    #
+            if self.DEBUG:
+                print("input_info.showFiltPerf\n===================")
+                print("H_targ", H_targ)
+                print("H_test", H_test)
+                print("H_test_dB", H_test_dB)
+                print("F_test", F_test_vals)
+                print("H_targ_pass",H_targ_pass)
+                print("passed:", self.targ_spec_passed)
+
+    #        min_dB = np.floor(max(PLT_min_dB, H_min_dB) / 10) * 10
+
+            self.tblFiltPerf.setRowCount(len(H_test))
+            self.target_spec_passed = False
+
+            self.tblFiltPerf.setHorizontalHeaderLabels([
+            'f/{0:s}'.format(fb.fil[0]['freq_specs_unit']),'|H(f)|','|H(f)| (dB)', 'Spec'] )
+            self.tblFiltPerf.setVerticalHeaderLabels(F_test_lbls)
+            for row in range(len(H_test)):
+    #            self.tblFiltPerf.setItem(row,0,QtGui.QTableWidgetItem(F_test_lbls[row]))
+                self.tblFiltPerf.setItem(row,0,QtGui.QTableWidgetItem(str('{0:.4g}'.format(F_test_vals[row]*f_S))))
+                self.tblFiltPerf.setItem(row,1,QtGui.QTableWidgetItem(str('%.4g'%(abs(H_test[row])))))
+                self.tblFiltPerf.setItem(row,2,QtGui.QTableWidgetItem(str('%2.3f'%(H_test_dB[row]))))
+                if not H_targ_pass[row]:
+                    self.tblFiltPerf.item(row,1).setBackgroundColor(Qt.QColor('red'))
+                    self.tblFiltPerf.item(row,2).setBackgroundColor(Qt.QColor('red'))
+                self.tblFiltPerf.setItem(row,3,QtGui.QTableWidgetItem(str('%2.3f'%(H_targ[row]))))
+
+
+        #    self.tblFiltPerf.item(1,1).setBackgroundColor(Qt.QColor('red'))
+            self.tblFiltPerf.resizeColumnsToContents()
+            self.tblFiltPerf.resizeRowsToContents()
+        except:
+            # @todo: temporary 'None' key error
+            pass
 
 
     def showDocs(self):

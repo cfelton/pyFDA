@@ -48,18 +48,17 @@ def filter_iir_hdl(clock, reset, sigin, sigout, coefficients=(None, None,),
     # @todo: current limitation ... mismatch input output future enhancement
     assert sigin.word_format == sigout.word_format
     w = sigin.word_format
+    assert isinstance(w, tuple), "Fixed-Point format (W) should be a 2-element tuple"
+    assert len(w) == 2 or len(w) == 3, "Fixed-Point format (W) should be a 2-element tuple"
+
     assert isinstance(a, tuple), "Tuple of denominator coefficents length 3"
     assert len(a) == 3, "Tuple of denominator coefficients length 3"
 
     assert isinstance(b, tuple), "Tuple of numerator coefficients length 3"
     assert len(b) == 3, "Tuple of numerator coefficients length 3"
 
-    assert isinstance(w, tuple), "Fixed-Point format (W) should be a 2-element tuple"
-    assert len(w) == 2, "Fixed-Point format (W) should be a 2-element tuple"
-
     # Make sure all coefficients are int, the class wrapper handles all float to
     # fixed-point conversion.
-
     ra = [isinstance(a[ii], int) for ii in range(len(a))]
     rb = [isinstance(b[ii], int) for ii in range(len(b))]
 
@@ -87,7 +86,7 @@ def filter_iir_hdl(clock, reset, sigin, sigout, coefficients=(None, None,),
     # Delay elements, list of signals (double length for all)
     ffd = [Signal(intbv(0, min=dmin, max=dmax)) for _ in range(2)]
     fbd = [Signal(intbv(0, min=dmin, max=dmax)) for _ in range(2)]
-    dvd = [Signal(bool(0)) for _ in range(3)]
+    dvd = Signal(bool(0))
     # accumulator full precision
     yacc = Signal(intbv(0, min=dmin, max=dmax))
 
@@ -99,7 +98,6 @@ def filter_iir_hdl(clock, reset, sigin, sigout, coefficients=(None, None,),
 
             fbd[1].next = fbd[0]
             fbd[0].next = yacc[qu:ql].signed()
-        dvd.next = concat(dvd[2:0], xdv)
 
     @always_comb
     def rtl_acc():
@@ -109,10 +107,11 @@ def filter_iir_hdl(clock, reset, sigin, sigout, coefficients=(None, None,),
 
     @always_seq(clock.posedge, reset=reset)
     def rtl_output():
+        dvd.next = xdv
         y.next = yacc[qu:ql].signed()
-        ydv.next = dvd[0]
+        ydv.next = dvd
 
-    stage = Signal(intbv(0, min=0, max=5))
+    stage = Signal(intbv(0, min=0, max=8))
     product = Signal(intbv(0, min=dmin, max=dmax))
     m1, m2 = [Signal(intbv(0, min=dmin, max=dmax)) for _ in range(2)]
 
@@ -146,15 +145,10 @@ def filter_iir_hdl(clock, reset, sigin, sigout, coefficients=(None, None,),
             yacc.next = yacc - product  # accumulating a1*fbd[0]
         elif stage == 5:
             stage.next = 6
-            m1.next = a2
-            m2.next = fbd[1]
-            yacc.next = yacc - product  # accumulating a2*fbd[1]
-        elif stage == 6:
-            stage.next = 7
             m1.next = 0
             m2.next = 0
             yacc.next = yacc - product  # accumulating a1*fbd[0]
-        elif stage == 7:
+        elif stage == 6:
             stage.next = 0
             y.next = yacc[qu:ql].signed()
             ydv.next = True
@@ -167,7 +161,7 @@ def filter_iir_hdl(clock, reset, sigin, sigout, coefficients=(None, None,),
     if shared_multiplier:
         gens = (rtl_input, rtl_acc_shared, rtl_shared_mult,)
     else:
-        gens = (rtl_input, rtl_output)
+        gens = (rtl_input, rtl_acc, rtl_output,)
 
     return gens
 
